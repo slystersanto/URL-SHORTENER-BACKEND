@@ -246,48 +246,6 @@ app.post("/enterurl", async function (req, res) {
 
 
 
-//   console.log(req.body)
-//   try {
-//     const connection = await mongoClient.connect(URL);
-//     const db = connection.db('password');
-//     if (req.body.longURL == "") {
-//       res.json({
-//         message: "Please enter URL",
-//       });
-//     } else {
-//       req.body.userid =new mongodb.ObjectId(req.userid);
-//       let random = randomstring.generate(5);
-//       req.body.shortURL = `${random}`; // note: when deploy use the deployment link here
-//       const user = await db.collection("urls").insertOne(req.body);
-
-//       // Calculate URLs per day and URLs per month
-//       const currentDate = new Date();
-//       console.log("Current date: ", currentDate);
-//       const urlsPerDay = await db.collection("urls").countDocuments({
-//         created_at: { $gte: new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()) }
-//       });
-//       console.log("URLs per day: ", urlsPerDay);
-//       const urlsPerMonth = await db.collection("urls").countDocuments({
-//         created_at: { $gte: new Date(currentDate.getFullYear(), currentDate.getMonth(), 1) }
-//       });
-//       console.log("URLs per month: ", urlsPerMonth);
-      
-//       // Get the full document with all fields
-//       const insertedDoc = await db.collection("urls").findOne({_id: user.insertedId});
-
-//       await connection.close();
-//       console.log(insertedDoc);
-//       res.json({
-//         ...insertedDoc,
-//         urlsPerDay,
-//         currentDate,
-//         urlsPerMonth
-//       });
-//     }
-//   } catch (error) {
-//     console.log(error);
-//   }
-// });
 
 
 app.get("/urls", async function(req, res) {
