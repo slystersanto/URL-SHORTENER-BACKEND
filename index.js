@@ -56,7 +56,7 @@ let authenticate = function (request, response, next) {
 
 
 app.get("/", function (request, response) {
-    response.send("welcome to password reset flow api🎉🎉🎉🎉🎉");
+    response.send("welcome to Url-Shortener api🎉🎉🎉🎉🎉");
 });
 
 
