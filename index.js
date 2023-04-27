@@ -22,6 +22,7 @@ const mongodb = require('mongodb');
 const mongoClient = mongodb.MongoClient;
 const dotenv = require('dotenv').config();
 const URL = process.env.DB;
+const SECRET_KEY=process.env.SECRET_KEY;
 const usermail = process.env.USER;
 const mailpassword = process.env.PASSWORD
 const jwt = require('jsonwebtoken');
@@ -34,6 +35,27 @@ const options = {
     integer: true
 }
 const nodemailer = require("nodemailer");
+
+
+let authenticate = function (request, response, next) {
+  if (request.headers.authorization) {
+    let verify = jwt.verify(request.headers.authorization, SECRET_KEY);
+    console.log(verify);
+    if (verify) {
+      request.userid = verify.id;
+
+      next();
+    } else {
+      response.status(401).json({
+        message: "Unauthorized",
+      });
+    }
+  } else {
+    response.status(401).json({
+      message: "Unauthorized",
+    });
+  }
+};
 
 
 
@@ -194,7 +216,7 @@ app.post('/changepassword/:id', async function (req, res) {
 })
 
 
-app.post("/enterurl", async function (req, res) {
+app.post("/enterurl", authenticate, async function (req, res) {
   console.log(req.body)
   try {
     const connection = await mongoClient.connect(URL);
@@ -207,7 +229,8 @@ app.post("/enterurl", async function (req, res) {
       req.body.created_at = new Date();
       req.body.userid =new mongodb.ObjectId(req.userid);
       let random = randomstring.generate(5);
-      req.body.shortURL = `${random}`; // note: when deploy use the deployment link here
+      req.body.shortURL = `${random}`;// note: when deploy use the deployment link here
+      req.body.clicks = 0; 
       const user = await db.collection("urls").insertOne(req.body);
 
       // Calculate URLs per day and URLs per month
@@ -227,7 +250,7 @@ app.post("/enterurl", async function (req, res) {
 
       // Get the full document with all fields
       const insertedDoc = await db.collection("urls").findOne({_id: user.insertedId});
-      const formattedDate = moment(insertedDoc.created_at).format('YYYY-MM-DD HH:mm:ss');
+      const formattedDate = moment(insertedDoc.created_at).format('DD-MM-YYYY HH:mm:ss');
       await connection.close();
       console.log(insertedDoc);
       res.json({
@@ -248,7 +271,7 @@ app.post("/enterurl", async function (req, res) {
 
 
 
-app.get("/urls", async function(req, res) {
+app.get("/urls",authenticate, async function(req, res) {
   try {
     const connection = await mongoClient.connect(URL);
     const db = connection.db('password');
@@ -268,13 +291,16 @@ app.get("/urls", async function(req, res) {
     });
 
     console.log("urlsPerMonth:", urlsPerMonth);
-
+    
+   
+    
     await connection.close();
 
     res.json({
       urls,
       urlsPerDay,
       urlsPerMonth
+      
     });
   } catch (error) {
     console.log(error);
@@ -284,13 +310,7 @@ app.get("/urls", async function(req, res) {
 
 
 
-
-
-
-
-
-
-app.get('/:shortUrl', async (req, res) => {
+app.get('/:shortUrl',authenticate, async (req, res) => {
   const shortUrl = req.params.shortUrl;
   console.log(shortUrl);
   try {
@@ -315,21 +335,23 @@ app.get('/:shortUrl', async (req, res) => {
 
 
 
-app.get('/short/:urlredirect', async (req, res) => {
+app.get('/short/:urlredirect',authenticate, async (req, res) => {
   const shortUrl = req.params.urlredirect;
   console.log(req);
   try {
     const connection = await mongoClient.connect(URL);
     const db = connection.db('password');
     const result = await db.collection('urls').findOne({ shortURL: shortUrl });
-    await connection.close();
+   
     if (result) {
+      await db.collection('urls').updateOne({ shortURL: shortUrl }, { $inc: { clickCount: +1 } });
       console.log(result.longURL);
       res.redirect(result.longURL);
       
     } else {
       res.status(404).send('URL not found');
     }
+    await connection.close();
   } catch (error) {
     console.log(error);
     res.status(500).send('Internal Server Error');
